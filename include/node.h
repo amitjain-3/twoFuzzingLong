@@ -3,6 +3,8 @@
 
 #define INPUT_SIZE 100
 
+extern pthread_mutex_t qlock;
+
 // The queue struct to store the mutated inputs
 typedef struct _node {
     int id; // A unique ID number for entry

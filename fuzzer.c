@@ -16,11 +16,17 @@
 
 #include "include/node.h"
 
+#define MUTEX_TYPE PTHREAD_MUTEX_RECURSIVE
+
+
+
 // Queue structs
 static Node * _queue_head = NULL; // The oldest elements are closest to the head
 static Node * _queue_tail = NULL; // The newest elements are closest to the tail
 static int _queue_size = -1; // Size of the queue: -1 for invalid
-static pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER; // Using static initializer: change if sharing between processes
+pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER; // Using static initializer: change if sharing between processes
+
+
 
 
 /*
@@ -67,10 +73,11 @@ int queue_init(){
 }
 
 int is_queue_valid(){
+    pthread_mutex_lock(&qlock);
     if (!_queue_head || !_queue_tail || _queue_size == -1){
         return 0;
     }
-
+    pthread_mutex_unlock(&qlock);
     return 1;
 }
 
@@ -172,6 +179,7 @@ void queue_print(){
 }
 
 void main(){
+    pthread_mutexattr_settype(&qlock, MUTEX_TYPE); 
     queue_init();
 
     Node * node = malloc(sizeof(Node));
