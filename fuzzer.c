@@ -35,7 +35,7 @@ int queue_init(){
     pthread_mutex_lock(&qlock);
 
     // Queue head or tail placeholders have already been initialized
-    if (_queue_head || _queue_tail){
+    if (is_queue_valid()){
         return 0;
     }
 
@@ -84,7 +84,7 @@ int queue_size(){
 
 int queue_put(Node* node){
     pthread_mutex_lock(&qlock);
-    if (!is_queue_valid){
+    if (!is_queue_valid()){
         return 0;
     }
 
@@ -144,9 +144,13 @@ void avada_Qdavra(){
 void node_print(Node * node){
     pthread_mutex_lock(&qlock);
 
-    printf("{ID: %d}", node->id);
+    unprotected_node_print(node);
 
     pthread_mutex_unlock(&qlock);
+}
+
+void unprotected_node_print(Node * node){
+    printf("{ID: %d}", node->id);
 }
 
 void queue_print(){
@@ -155,7 +159,7 @@ void queue_print(){
     Node * temp = _queue_tail;
 
     while (temp){
-        node_print(temp);
+        unprotected_node_print(temp);
         if (temp != _queue_head){
             printf(" -> ");
         }
