@@ -11,94 +11,160 @@
 // 4. Define code structure: data structure operations, branch behaviour 
 
 #include <stdio.h>
+#include <pthread.h>
 #include <stdlib.h>
+
 #include "include/node.h"
 
-// Elements are added after the tail, and removed from before the head.
-static Node * queue_head = NULL; 
-static Node * queue_tail = NULL; 
-void node_print(Node * node);
-// Create a placeholder element for head and tail: call this only once
+// Queue structs
+static Node * _queue_head = NULL; // The oldest elements are closest to the head
+static Node * _queue_tail = NULL; // The newest elements are closest to the tail
+static int _queue_size = -1; // Size of the queue: -1 for invalid
+static pthread_mutex_t qlock = PTHREAD_MUTEX_INITIALIZER; // Using static initializer: change if sharing between processes
+
+
+/*
+ * Params:
+ *
+ * Returns:
+ * 
+ * Description
+ *      Initialize the queues, as well as the mutex to access the queues. Allocates head and tail placeholders, and constructs a queue of size 0. Call this only once per queue
+*/
 int queue_init(){
-    if (queue_head != NULL || queue_tail != NULL){
-        return 0;
-    }
-    queue_head = malloc(sizeof(Node));
-    if (!queue_head){
-        return 0;
-    }
+    pthread_mutex_lock(&qlock);
 
-    queue_head->id = -1;
-    queue_head->next = NULL;
-    queue_head->prev = NULL;
-
-    queue_tail = malloc(sizeof(Node));
-    if (!queue_tail){
+    // Queue head or tail placeholders have already been initialized
+    if (_queue_head || _queue_tail){
         return 0;
     }
 
-    queue_tail->id = -2;
-    queue_tail->next = queue_head;
-    queue_tail->prev = NULL;
+    _queue_head = malloc(sizeof(Node));
+    if (!_queue_head){
+        return 0;
+    }
 
-    queue_head->prev = queue_tail;
+    _queue_head->id = -1;
+    _queue_head->next = NULL;
+    _queue_head->prev = NULL;
+
+    _queue_tail = malloc(sizeof(Node));
+    if (!_queue_tail){
+        return 0;
+    }
+
+    _queue_tail->id = -2;
+    _queue_tail->next = _queue_head;
+    _queue_tail->prev = NULL;
+
+    _queue_head->prev = _queue_tail;
+
+    _queue_size = 0;
+
+    pthread_mutex_unlock(&qlock);
 
     return 1;
 }
 
-void queue_put(Node* node){
-    Node * queue_tail_next = queue_tail->next;
-    queue_tail->next = node;
-    node->prev = queue_tail;
+int is_queue_valid(){
+    if (!_queue_head || !_queue_tail || _queue_size == -1){
+        return 0;
+    }
+
+    return 1;
+}
+
+int queue_size(){
+    pthread_mutex_lock(&qlock);
+    int output = _queue_size;
+    pthread_mutex_unlock(&qlock);
+
+    return output;
+}
+
+int queue_put(Node* node){
+    pthread_mutex_lock(&qlock);
+    if (!is_queue_valid){
+        return 0;
+    }
+
+    Node * queue_tail_next = _queue_tail->next;
+    _queue_tail->next = node;
+    node->prev = _queue_tail;
     node->next = queue_tail_next;
     queue_tail_next->prev = node;
+
+    _queue_size++;
+
+    pthread_mutex_unlock(&qlock);
 }
 
 Node * queue_get(){
-    Node * to_remove = queue_head->prev;
-    Node * to_remove_prev = queue_head->prev->prev;
-    to_remove_prev->next = queue_head;
-    queue_head->prev = to_remove_prev;
+    pthread_mutex_lock(&qlock);
+
+    Node * to_remove = _queue_head->prev;
+    Node * to_remove_prev = _queue_head->prev->prev;
+    to_remove_prev->next = _queue_head;
+    _queue_head->prev = to_remove_prev;
     to_remove->prev = NULL;
     to_remove->next = NULL;
+
+    _queue_size--;
+
+    pthread_mutex_unlock(&qlock);
 
     return to_remove;
 }
 
-Node * queue_get_head(){
-    return queue_head->prev;
-}
+// Dont define these not atomic funcs yet
+// Node * queue_get_head(){
+//     return queue_head->prev;
+// }
 
-Node * queue_get_tail(){
-    return queue_tail->next;
-}
+// Node * queue_get_tail(){
+//     return queue_tail->next;
+// }
 
 void avada_Qdavra(){
-    Node * temp = queue_tail;
+    pthread_mutex_lock(&qlock);
+
+    Node * temp = _queue_tail;
     
     while (temp){
         Node * temp_next = temp->next;
         free(temp);
         temp = temp_next;
     }
+
+    _queue_size = -1;
+
+    pthread_mutex_unlock(&qlock);
 }
 
 void node_print(Node * node){
+    pthread_mutex_lock(&qlock);
+
     printf("{ID: %d}", node->id);
+
+    pthread_mutex_unlock(&qlock);
 }
 
 void queue_print(){
-    Node * temp = queue_tail;
+    pthread_mutex_lock(&qlock);
+
+    Node * temp = _queue_tail;
 
     while (temp){
         node_print(temp);
-        if (temp != queue_head){
+        if (temp != _queue_head){
             printf(" -> ");
         }
         temp = temp->next;
     }
 
     printf("\n");
+
+    pthread_mutex_unlock(&qlock);
 }
 
 void main(){

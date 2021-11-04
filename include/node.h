@@ -19,8 +19,13 @@ typedef struct _node {
     struct _node * prev; // Prev element in the queueu
 } Node;
 
-int add_fifo(Node * node); //add input to queue if it is interesting
-
-Node* get_fifo(void); //return first input from queue if
+int queue_init();
+int queue_put(Node* node);
+Node * queue_get();
+// Node * queue_get_head();
+// Node * queue_get_tail();
+void avada_Qdavra();
+void node_print(Node * node);
+void queue_print();
 
 #endif
