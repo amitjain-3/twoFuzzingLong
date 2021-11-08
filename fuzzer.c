@@ -21,7 +21,16 @@ void *add(void* num){
     Node * node = malloc(sizeof(Node));
     node->id = (int)num;
     queue_put(node);
-    // queue_print();
+
+    pthread_exit(NULL);
+}
+
+
+void *rem(){
+    Node * prev;
+    queue_get(&prev);
+    node_print(prev); printf("\n");
+    free(prev);
 
     pthread_exit(NULL);
 }
@@ -54,7 +63,20 @@ void main(){
         pthread_join(threads[i], NULL);
     }
 
-    // queue_print();
+    for( i = 0; i < NUM_THREADS-1; i++ ) {
+        
+        rc = pthread_create(&threads[i], NULL, rem, NULL);
+        if (rc) {
+            printf("Error:unable to create thread, %d\n", rc);
+            exit(-1);
+        }
+    }
+
+    for( i = 0; i < NUM_THREADS-1; i++ ) {
+        pthread_join(threads[i], NULL);
+    }
+
+    queue_print();
     avada_Qdavra();
     pthread_mutex_destroy(&qlock);
     pthread_exit(NULL);

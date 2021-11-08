@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "pthread.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "node.h": "c"
     }
 }
