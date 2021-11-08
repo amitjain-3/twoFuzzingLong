@@ -15,34 +15,50 @@
 #include <stdlib.h>
 
 #include "include/node.h"
+#define NUM_THREADS 8
 
+void *add(void* num){
+    Node * node = malloc(sizeof(Node));
+    node->id = (int)num;
+    queue_put(node);
+    // queue_print();
+
+    pthread_exit(NULL);
+}
 
 void main(){
     queue_init();
 
-    Node * node = malloc(sizeof(Node));
-    node->id = 1;
-    queue_put(node);
-    queue_print();
+   
+    // queue_get(&prev);
+    // node_print(prev); printf("\n");
+    // queue_print();
+    // free(prev);
 
-    Node * node2 = malloc(sizeof(Node));
-    node2->id = 2;
-    queue_put(node2);
-    queue_print();
+    // queue_get(&prev);
+    // queue_print();
+    pthread_t threads[NUM_THREADS];
 
-    Node * prev;
-    queue_get(&prev);
-    node_print(prev); printf("\n");
-    queue_print();
-    free(prev);
+    int rc;
+    int i;
+    for( i = 0; i < NUM_THREADS; i++ ) {
+        
+        rc = pthread_create(&threads[i], NULL, add, (void *)i);
+        if (rc) {
+            printf("Error:unable to create thread, %d\n", rc);
+            exit(-1);
+        }
+    }
 
-    queue_get(&prev);
-    node_print(prev); printf("\n");
-    queue_print();
-    free(prev);
+    for( i = 0; i < NUM_THREADS; i++ ) {
+        pthread_join(threads[i], NULL);
+    }
 
-    queue_get(&prev);
-    queue_print();
-
+    // queue_print();
     avada_Qdavra();
+    pthread_mutex_destroy(&qlock);
+    pthread_exit(NULL);
+
+
+    return;
 }
