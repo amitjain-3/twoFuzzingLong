@@ -13,8 +13,9 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
-
+#include <unistd.h>
 #include "include/node.h"
+#import <mach/thread_act.h>
 #define NUM_THREADS 8
 
 void *add(void* num){
@@ -35,10 +36,15 @@ void *rem(){
     pthread_exit(NULL);
 }
 
-void main(){
+int determineCoreCount(){ 
+
+}
+
+int main(){
     queue_init();
 
-   
+    int processorCount = 1; //default 
+    pthread_attr_t *affinity_attr = NULL; 
     // queue_get(&prev);
     // node_print(prev); printf("\n");
     // queue_print();
@@ -46,33 +52,54 @@ void main(){
 
     // queue_get(&prev);
     // queue_print();
-    pthread_t threads[NUM_THREADS];
+    processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+    printf("Number of logical cores: %d\n", processorCount);
+
+#if defined __APPLE__ || defined __unix__
+    /*need to figure out how to set affinity, cpu_set_t does not exist. 
+      doesnt look like we can set affinity explictly on OSX, 
+      but can give hints to kernel which threads do not need to share L2 cache so that they can be scheduled appropriate */
+#elif __linux__
+    pthread_attr_t attr;
+    cpu_set_t cpus;
+    pthread_attr_init(&attr);
+#endif
+    
+    pthread_t threads[processorCount];
 
     int rc;
     int i;
-    for( i = 0; i < NUM_THREADS; i++ ) {
-        
-        rc = pthread_create(&threads[i], NULL, add, (void *)i);
+    for( i = 0; i < processorCount; i++ ) {
+        //assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop (works for linux - need different way for OSX/unix)
+#ifdef __linux__
+        CPU_ZERO(&cpus);
+        CPU_SET(i, &cpus);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+        affinity_attr = &attr;
+#endif
+        rc = pthread_create(&threads[i], affinity_attr, add, (void *)i);
         if (rc) {
             printf("Error:unable to create thread, %d\n", rc);
             exit(-1);
         }
+        usleep(250000); 
     }
 
-    for( i = 0; i < NUM_THREADS; i++ ) {
+    for( i = 0; i < processorCount; i++ ) {
         pthread_join(threads[i], NULL);
     }
 
-    for( i = 0; i < NUM_THREADS-1; i++ ) {
+    for( i = 0; i < processorCount-1; i++ ) {
         
         rc = pthread_create(&threads[i], NULL, rem, NULL);
         if (rc) {
             printf("Error:unable to create thread, %d\n", rc);
             exit(-1);
         }
+        usleep(250000);
     }
 
-    for( i = 0; i < NUM_THREADS-1; i++ ) {
+    for( i = 0; i < processorCount-1; i++ ) {
         pthread_join(threads[i], NULL);
     }
 
@@ -82,5 +109,5 @@ void main(){
     pthread_exit(NULL);
 
 
-    return;
+    return 0;
 }
