@@ -80,7 +80,7 @@ int determineCoreCount(){
 
 }
 
-int main(){
+int _main(){
     queue_init();
 
     int processorCount = 1; //default 
