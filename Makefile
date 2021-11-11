@@ -3,6 +3,6 @@ queue:
 
 val:
 	valgrind --leak-check=full --show-leak-kinds=all -v ./main
-	
+
 clean:
 	rm -rf main

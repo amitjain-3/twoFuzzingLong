@@ -100,6 +100,7 @@ int queue_get(Node ** return_node){
     if (_queue_size == 0){
         printf("ERROR: Removing from empty queue\n");
         *return_node = NULL;
+        pthread_mutex_unlock(&qlock);
         return ERROR;
     }
 

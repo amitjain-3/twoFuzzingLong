@@ -16,6 +16,44 @@
 
 #include "include/node.h"
 #define NUM_THREADS 8
+#define NUM_MUTATION_FUNCS 2
+
+
+void _byte_flip(unsigned char in[INPUT_SIZE]){
+    int byte_num = rand() % INPUT_SIZE;
+    in[byte_num] ^= 0xff;
+}
+
+
+void _bit_flip(unsigned char in[INPUT_SIZE]){
+    int byte_num = rand() % INPUT_SIZE;
+    int bit_num = rand() % 8;
+    in[byte_num] ^= (0x1<<bit_num);
+}
+
+typedef void (*func_t)(unsigned char [INPUT_SIZE]);
+
+int mutate (unsigned char in[INPUT_SIZE]){
+    func_t funcs[NUM_MUTATION_FUNCS] = {_byte_flip, _bit_flip};
+
+    int func_num = rand() % NUM_MUTATION_FUNCS;
+    funcs[func_num](in);
+}
+
+void print_hex(const unsigned char s[INPUT_SIZE])
+{
+  while(*s)
+    printf("%02x", (unsigned int) *s++);
+  printf("\n");
+}
+
+void main(){
+    time_t t; srand((unsigned) time(&t));
+
+    unsigned char test[100] = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n";
+    mutate(test);
+    print_hex(test);
+}
 
 void *add(void* num){
     Node * node = malloc(sizeof(Node));
@@ -35,7 +73,7 @@ void *rem(){
     pthread_exit(NULL);
 }
 
-void main(){
+void _main(){
     queue_init();
 
    
