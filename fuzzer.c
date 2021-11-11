@@ -9,12 +9,15 @@
 // 2. Mutate operations: bit flip, delete/add element, 
 // 3. Run test program: get runtime, get crash status, etc, maybe coverage later
 // 4. Define code structure: data structure operations, branch behaviour 
-
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
-
+#include <unistd.h>
 #include "include/node.h"
+#ifdef __APPLE__
+#include <mach/thread_act.h>
+#endif
 #define NUM_THREADS 8
 #define NUM_MUTATION_FUNCS 2
 
@@ -73,10 +76,15 @@ void *rem(){
     pthread_exit(NULL);
 }
 
-void _main(){
+int determineCoreCount(){ 
+
+}
+
+int main(){
     queue_init();
 
-   
+    int processorCount = 1; //default 
+    pthread_attr_t *affinity_attr = NULL; 
     // queue_get(&prev);
     // node_print(prev); printf("\n");
     // queue_print();
@@ -84,33 +92,61 @@ void _main(){
 
     // queue_get(&prev);
     // queue_print();
-    pthread_t threads[NUM_THREADS];
+    processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+    printf("Number of logical cores: %d\n", processorCount);
+
+#ifdef __APPLE__
+    /*need to figure out how to set affinity, cpu_set_t does not exist. 
+      doesnt look like we can set affinity explictly on OSX, 
+      but can give hints to kernel which threads do not need to share L2 cache so that they can be scheduled appropriate */
+    printf("Still working on this");
+#elif __linux__
+    pthread_attr_t attr;
+    cpu_set_t cpus;
+    pthread_attr_init(&attr);
+    printf("initialized attribute \n");
+#endif
+    
+    pthread_t threads[processorCount];
 
     int rc;
     int i;
-    for( i = 0; i < NUM_THREADS; i++ ) {
-        
-        rc = pthread_create(&threads[i], NULL, add, (void *)i);
+    for( i = 0; i < processorCount; i++ ) {
+        //assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop (works for linux - need different way for OSX/unix)
+#ifdef __linux__
+        CPU_ZERO(&cpus);
+        CPU_SET(i, &cpus);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+        affinity_attr = &attr;
+#endif
+        rc = pthread_create(&threads[i], affinity_attr, add, (void *)i);
         if (rc) {
             printf("Error:unable to create thread, %d\n", rc);
             exit(-1);
         }
+        //usleep(250000); 
     }
 
-    for( i = 0; i < NUM_THREADS; i++ ) {
+    for( i = 0; i < processorCount; i++ ) {
         pthread_join(threads[i], NULL);
     }
 
-    for( i = 0; i < NUM_THREADS-1; i++ ) {
-        
-        rc = pthread_create(&threads[i], NULL, rem, NULL);
+    for( i = 0; i < processorCount-1; i++ ) {
+#ifdef __linux__
+        CPU_ZERO(&cpus);
+        CPU_SET(i, &cpus);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+        affinity_attr = &attr;
+#endif
+        rc = pthread_create(&threads[i], affinity_attr, rem, NULL);
         if (rc) {
             printf("Error:unable to create thread, %d\n", rc);
             exit(-1);
         }
+        //usleep(250000);
     }
 
-    for( i = 0; i < NUM_THREADS-1; i++ ) {
+    for( i = 0; i < processorCount-1; i++ ) {
         pthread_join(threads[i], NULL);
     }
 
@@ -119,6 +155,5 @@ void _main(){
     pthread_mutex_destroy(&qlock);
     pthread_exit(NULL);
 
-
-    return;
+    return 0;
 }
