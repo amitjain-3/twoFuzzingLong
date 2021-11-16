@@ -3,6 +3,10 @@
 
 #define INPUT_SIZE 100
 
+#include <pthread.h>
+#include <stdlib.h>
+
+
 // The queue node struct to store the mutated inputs
 typedef struct _node {
     int id;                     // A unique ID number for entry

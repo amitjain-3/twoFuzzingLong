@@ -12,15 +12,15 @@ pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
 #define PERCENT_CUTOFF 0.7 
 
 
-void capture_begin_time(){     
+/*void capture_begin_time(){     
     begin = clock();
 } 
 
 void capture_end_time(){ 
     end = clock();
-}
+}*/
 
-float get_execution_time(){ 
+float get_execution_time(clock_t begin, clock_t end){
     float time_spent = (float)((end - begin) / CLOCKS_PER_SEC);
     return time_spent;
 }
@@ -41,11 +41,11 @@ void input_entry(float execution_time, unsigned int exit_status, int ID, char *m
         node->runtime = execution_time; 
         node->exit_status = exit_status;
         for (int i = 0; i<INPUT_SIZE; i++){ 
-            node->input[i]=*(mutated_input+i)
+            node->input[i]=*(mutated_input+i);
         }
         queue_put(node);
     } else { 
-        printf("discard input - does not extend runtime")
+        printf("discard input - does not extend runtime");
     } 
 }
 
