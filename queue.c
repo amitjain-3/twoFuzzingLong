@@ -88,6 +88,42 @@ int queue_put(Node* node){
     return SUCCESS;
 }
 
+int queue_sorted_put(Node* node){
+    pthread_mutex_lock(&qlock);
+    if (!is_queue_valid__nolocks()){
+        pthread_mutex_unlock(&qlock);
+        return ERROR;
+    }
+    if (!_queue_size){
+        pthread_mutex_unlock(&qlock);
+        queue_put(node);
+        return SUCCESS;
+    }
+    Node * queue_index = _queue_tail->next; 
+    while (queue_index->next != NULL) {
+        if (queue_index->runtime < node->runtime){ 
+            Node * prev_queue = queue_index->prev; 
+            queue_index->prev = node; 
+            node->next = queue_index; 
+            node->prev = prev_queue; 
+            prev_queue->next = node; 
+            break;
+        }
+         queue_index = queue_index->next; 
+         if (queue_index == _queue_head){ 
+             //insert at end 
+            Node * prev_queue = queue_index->prev; 
+            queue_index->prev = node; 
+            node->next = queue_index; 
+            node->prev = prev_queue; 
+            prev_queue->next = node; 
+         }
+    }
+    _queue_size++;
+    pthread_mutex_unlock(&qlock);
+    return SUCCESS;
+}
+
 
 int queue_get(Node ** return_node){
     pthread_mutex_lock(&qlock);
@@ -129,7 +165,7 @@ void node_print(Node * node){
 
 
 void node_print__nolocks(Node * node){
-    printf("{ID: %d}", node->id);
+    printf("{ID: %d RUN_TIME: %f}", node->id, node->runtime);
 
     return;
 }
