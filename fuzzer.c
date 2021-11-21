@@ -94,10 +94,10 @@ void interesting_inputs_to_queue(char * filename){
 }
 
 
-void fuzz_loop(){
+void * fuzz_loop(){
     Node * curr;
     int i = 0;
-    while (i++ < 1000000){
+    while (i++ < 10){
         // Get one input from queue
         queue_get(&curr);
 
@@ -108,38 +108,64 @@ void fuzz_loop(){
 
         free(curr); 
     }
-    
+
+    pthread_exit(NULL);
 }
 
 
 int main(){
+    /*** First do some system profiling FOR LINUX ***/
+    // Number of cores
+    int processorCount = 1; // Default 
+    processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+    printf("Number of logical cores available: %d\n", processorCount);
+
+    pthread_t * threads = malloc(sizeof(pthread_t) * processorCount); // Array of threads for each core
+
+    cpu_set_t cpus; // ?
+    CPU_ZERO(&cpus); // TODO Changed pos to here outside the loop. Right?
+
+    pthread_attr_t attr; // ?
+    pthread_attr_init(&attr);
+
+    /*** Now setup the queue ***/
     queue_init();
     interesting_inputs_to_queue("int_inputs.txt");
     queue_print();
 
+    /*** Main thread creation- one for each core ***/
+    for(int i = 0; i < processorCount; i++){
+        // Assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop
+
+        // Add cpu to set
+        CPU_SET(i, &cpus);
+
+        // Set the affinity of thread to core
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
+        rc = pthread_create(&threads[i], &attr, fuzz_loop, (void *)i);
+        if (rc) {
+            printf("Error:unable to create thread, %d\n", rc);
+            exit(-1);
+        }
+    }
+
+    /*** Cleanup ***/
+    // Join each thread
+    for(int i = 0; i < processorCount; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    free(threads);
+
+    // Destroy queue stuff
     avada_Qdavra();
-    return 0;
+    pthread_mutex_destroy(&qlock);
     
-    // add(1, 1);
-    // add(2, 5);
-    // add(3, 3);
-    // add(4, 4);
-    // add(5, 2);
+    return 0;
+}
 
-    // rem();
-    // rem();
-    // rem();
-    // rem();
-    // rem();
-    // rem();
-    // rem();
-    // rem();
-    // rem();
-    // rem();
 
-    // queue_print();
-    // avada_Qdavra();
-
+void some_old_main_stuff(){
     int processorCount = 1; //default 
     pthread_attr_t *affinity_attr = NULL; 
 
@@ -224,7 +250,6 @@ int main(){
 
     return 0;
 }
-
 
 // Write mutate func
 // Store interesting inputs in a queue
