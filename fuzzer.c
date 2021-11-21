@@ -82,7 +82,13 @@ void interesting_inputs_to_queue(char * filename){
 void * fuzz_loop(){
     Node * curr;
     int i = 0;
-    while (i++ < 10){
+    printf("created\n");
+
+    // Random calcs--- temporary
+    volatile int j = 0;
+    volatile int k = 1212;
+    while (i++ < 10000000000){
+        j = (k + 1230) / k;
         // Get one input from queue
         // queue_get(&curr);
 
@@ -111,7 +117,7 @@ int main(){
     CPU_ZERO(&cpus); // TODO Changed pos to here outside the loop. Right?
 
     pthread_attr_t attr; // ?
-    pthread_attr_init(&attr);
+    sched_param param;
 
     /*** Now setup the queue ***/
     queue_init();
@@ -126,6 +132,13 @@ int main(){
         CPU_SET(i, &cpus);
 
         // Set the affinity of thread to core
+        pthread_attr_init (&attr);
+
+        // Set thread priority
+        pthread_attr_getschedparam (&attr, &param);
+        param.sched_priority += 0; // Custom prio level?
+        pthread_attr_setschedparam (&attr, &param);
+
         pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
         int rc = pthread_create(&threads[i], &attr, fuzz_loop, NULL);
         if (rc) {

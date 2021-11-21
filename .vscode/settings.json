@@ -6,7 +6,8 @@
         "unistd.h": "c",
         "perf_event.h": "c",
         "runtime_stats.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "random": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }
