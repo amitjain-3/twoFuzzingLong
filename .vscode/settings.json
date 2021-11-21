@@ -4,7 +4,9 @@
         "stdio.h": "c",
         "node.h": "c",
         "unistd.h": "c",
-        "perf_event.h": "c"
+        "perf_event.h": "c",
+        "runtime_stats.h": "c",
+        "stdlib.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

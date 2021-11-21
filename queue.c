@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-
+#include <string.h>
 #include "include/node.h"
 
 #define ERROR 0
@@ -32,8 +32,19 @@ int is_queue_valid__nolocks(){
 }
 
 
+void node_init(Node * node, int id){
+    node->id = id;
+    node->thread_pid = -1;  
+    node->core_affinity = -1; 
+    memset(node->input, 0, INPUT_SIZE);
+    node->exit_status = -1;  
+    node->runtime = -1;  
+    node->next = NULL;
+    node->prev = NULL;
+}
+
+
 int queue_init(){
-    // pthread_mutexattr_settype(&qlock, PTHREAD_MUTEX_RECURSIVE); // TODO: This call is for attributes: it might be wrong
     pthread_mutex_lock(&qlock);
 
     if (is_queue_valid__nolocks()){
@@ -46,20 +57,16 @@ int queue_init(){
         pthread_mutex_unlock(&qlock);
         return ERROR;
     }
-
-    _queue_head->id = -1;
-    _queue_head->next = NULL;
-    _queue_head->prev = NULL;
+    node_init(_queue_head, -1);
 
     _queue_tail = malloc(sizeof(Node));
     if (!_queue_tail){
         pthread_mutex_unlock(&qlock);
         return ERROR;
     }
+    node_init(_queue_tail, -2);
 
-    _queue_tail->id = -2;
     _queue_tail->next = _queue_head;
-    _queue_tail->prev = NULL;
     _queue_head->prev = _queue_tail;
     _queue_size = 0;
 
@@ -88,6 +95,7 @@ int queue_put(Node* node){
     return SUCCESS;
 }
 
+
 int queue_sorted_put(Node* node){
     pthread_mutex_lock(&qlock);
 
@@ -96,39 +104,8 @@ int queue_sorted_put(Node* node){
         return ERROR;
     }
 
-    // if (!_queue_size){
-    //     pthread_mutex_unlock(&qlock);
-    //     queue_put(node);
-    //     return SUCCESS;
-    // }
-
-    // Node * queue_index = _queue_tail->next; 
-
-    // while (queue_index->next != NULL) {
-    //     if (queue_index->runtime < node->runtime){ 
-    //         Node * prev_queue = queue_index->prev; 
-    //         queue_index->prev = node; 
-    //         node->next = queue_index; 
-    //         node->prev = prev_queue; 
-    //         prev_queue->next = node; 
-    //         break;
-    //     }
-
-    //     queue_index = queue_index->next; 
-        
-    //     if (queue_index == _queue_head){ 
-    //         //insert at end 
-    //         Node * prev_queue = queue_index->prev; 
-    //         queue_index->prev = node; 
-    //         node->next = queue_index; 
-    //         node->prev = prev_queue; 
-    //         prev_queue->next = node; 
-    //     }
-    // }
-
-
     Node * temp = _queue_tail;
-    while ((temp->next != _queue_head) && (temp->next->runtime <= node->runtime)){
+    while ((temp->next != _queue_head) && (temp->next->runtime >= node->runtime)){
         temp = temp->next;
     }
         
@@ -139,7 +116,6 @@ int queue_sorted_put(Node* node){
     temp_next->prev = node;
 
     _queue_size++;
-
     pthread_mutex_unlock(&qlock);
 
     return SUCCESS;
@@ -161,10 +137,11 @@ int queue_get(Node ** return_node){
         return ERROR;
     }
 
-    Node * to_remove = _queue_head->prev;
-    Node * to_remove_prev = _queue_head->prev->prev;
-    to_remove_prev->next = _queue_head;
-    _queue_head->prev = to_remove_prev;
+    Node * to_remove = _queue_tail->next;
+    Node * to_remove_next = to_remove->next;
+
+    _queue_tail->next = to_remove_next;
+    to_remove_next->prev = _queue_tail;
     to_remove->prev = NULL;
     to_remove->next = NULL;
 

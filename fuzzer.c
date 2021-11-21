@@ -1,36 +1,19 @@
-
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#ifdef __APPLE__
+    #include <mach/thread_act.h>
+#endif
 
 #include "include/node.h"
 #include "include/runtime_stats.h"
 
-#ifdef __APPLE__
-#include <mach/thread_act.h>
-#endif
-
+#define _GNU_SOURCE
 #define NUM_THREADS 8
 #define NUM_MUTATION_FUNCS 2
 
-
-void add(int num, int runtime){
-    Node * node = malloc(sizeof(Node));
-    node->runtime = runtime; 
-    node->id = num;
-    queue_sorted_put(node);
-}
-
-
-void rem(){
-    Node * prev;
-    queue_get(&prev);
-    node_print(prev); printf("\n");
-    free(prev);
-}
 
 void _byte_flip(unsigned char in[INPUT_SIZE]){
     int byte_num = rand() % INPUT_SIZE;
@@ -55,6 +38,7 @@ int mutate (unsigned char in[INPUT_SIZE]){
     funcs[func_num](in);
 }
 
+
 void print_hex(const unsigned char s[INPUT_SIZE])
 {
   while(*s)
@@ -67,24 +51,101 @@ int determineCoreCount(){
 
 }
 
+
+void add(int num, int runtime){
+    Node * node = malloc(sizeof(Node));
+    node->runtime = runtime; 
+    node->id = num;
+    queue_sorted_put(node);
+}
+
+
+void rem(){
+    Node * prev;
+    queue_get(&prev);
+    if (prev == NULL) return;
+    node_print(prev); printf("\n");
+    free(prev);
+}
+
+
+void interesting_inputs_to_queue(char * filename){
+    FILE * fp = fopen(filename, "r");
+    char buf[INPUT_SIZE] = {0};
+
+    while (fscanf(fp, "%s", buf) != EOF){
+        Node * node = malloc(sizeof(Node));
+        node_init(node, rand() % 10000);
+
+        // Copy 99 chars + add \0 to the end
+        memcpy(node->input, buf, INPUT_SIZE-1);
+        node->input[99] = '\0';
+
+        // Run on the input and get runtime
+        int runtime = rand() % 10000;
+        node->runtime = runtime;
+
+        queue_sorted_put(node);
+        printf("%s\n", node->input);
+    }
+
+    fclose(fp);
+    return;
+}
+
+
+void fuzz_loop(){
+    Node * curr;
+    int i = 0;
+    while (i++ < 1000000){
+        // Get one input from queue
+        queue_get(&curr);
+
+        // Mutate it
+        mutate(curr->input);
+
+        // Check if interesting and add
+
+        free(curr); 
+    }
+    
+}
+
+
 int main(){
     queue_init();
+    interesting_inputs_to_queue("int_inputs.txt");
+    queue_print();
+
+    avada_Qdavra();
+    return 0;
+    
+    // add(1, 1);
+    // add(2, 5);
+    // add(3, 3);
+    // add(4, 4);
+    // add(5, 2);
+
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+    // rem();
+
+    // queue_print();
+    // avada_Qdavra();
 
     int processorCount = 1; //default 
     pthread_attr_t *affinity_attr = NULL; 
 
-    add(1, 3);
-    add(2, 2);
-    add(3, 1);
-    add(4, 2);
-    add(5, 100);
-
-    queue_print();
-    avada_Qdavra();
-
-    return 0;
     processorCount = sysconf(_SC_NPROCESSORS_ONLN);
     printf("Number of logical cores: %d\n", processorCount);
+
 
 #ifdef __APPLE__
     /*need to figure out how to set affinity, cpu_set_t does not exist. 

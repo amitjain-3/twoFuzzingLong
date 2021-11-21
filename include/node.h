@@ -28,6 +28,7 @@ extern pthread_mutex_t qlock;   // Using static initializer: change if sharing b
 
 int queue_size();
 int is_queue_valid__nolocks();
+void node_init(Node * node, int id);
 int queue_init();
 int queue_put(Node* node);
 int queue_sorted_put(Node* node);
