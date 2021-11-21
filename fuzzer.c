@@ -71,7 +71,7 @@ void interesting_inputs_to_queue(char * filename){
         node->runtime = runtime;
 
         queue_sorted_put(node);
-        printf("%s\n", node->input);
+        // printf("%s\n", node->input);
     }
 
     fclose(fp);
@@ -82,22 +82,25 @@ void interesting_inputs_to_queue(char * filename){
 void * fuzz_loop(){
     Node * curr;
     int i = 0;
-    printf("created\n");
 
     // Random calcs--- temporary
     volatile int j = 0;
     volatile int k = 1212;
-    while (i++ < 10000000000){
-        j = (k + 1230) / k;
+    while (i++ < 100){
+        j = (k + 1230) / k; // random calc
+
         // Get one input from queue
-        // queue_get(&curr);
+        queue_get(&curr);
 
         // Mutate it
-        // mutate(curr->input);
+        mutate(curr->input);
+        curr->runtime = rand() % rand();
 
         // Check if interesting and add
+        queue_sorted_put(curr);
 
         // free(curr); 
+        usleep(0.1 * 1e6);
     }
 
     return NULL;
@@ -117,15 +120,14 @@ int main(){
     CPU_ZERO(&cpus); // TODO Changed pos to here outside the loop. Right?
 
     pthread_attr_t attr; // ?
-    sched_param param;
+    struct sched_param param;
 
     /*** Now setup the queue ***/
     queue_init();
     interesting_inputs_to_queue("int_inputs.txt");
-    queue_print();
 
     /*** Main thread creation- one for each core ***/
-    for(int i = 0; i < processorCount; i++){
+    for(int i = 0; i < 1; i++){
         // Assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop
 
         // Add cpu to set
@@ -149,9 +151,12 @@ int main(){
 
     /*** Cleanup ***/
     // Join each thread
-    for(int i = 0; i < processorCount; i++) {
+    for(int i = 0; i < 1; i++) {
         pthread_join(threads[i], NULL);
     }
+
+    queue_print();
+
 
     free(threads);
 
