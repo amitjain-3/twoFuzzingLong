@@ -30,6 +30,7 @@ int queue_size();
 int is_queue_valid__nolocks();
 int queue_init();
 int queue_put(Node* node);
+int queue_sorted_put(Node* node);
 int queue_get(Node ** return_node);
 void node_print(Node * node);
 void node_print__nolocks(Node * node);

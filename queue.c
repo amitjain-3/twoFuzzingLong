@@ -90,37 +90,58 @@ int queue_put(Node* node){
 
 int queue_sorted_put(Node* node){
     pthread_mutex_lock(&qlock);
+
     if (!is_queue_valid__nolocks()){
         pthread_mutex_unlock(&qlock);
         return ERROR;
     }
-    if (!_queue_size){
-        pthread_mutex_unlock(&qlock);
-        queue_put(node);
-        return SUCCESS;
+
+    // if (!_queue_size){
+    //     pthread_mutex_unlock(&qlock);
+    //     queue_put(node);
+    //     return SUCCESS;
+    // }
+
+    // Node * queue_index = _queue_tail->next; 
+
+    // while (queue_index->next != NULL) {
+    //     if (queue_index->runtime < node->runtime){ 
+    //         Node * prev_queue = queue_index->prev; 
+    //         queue_index->prev = node; 
+    //         node->next = queue_index; 
+    //         node->prev = prev_queue; 
+    //         prev_queue->next = node; 
+    //         break;
+    //     }
+
+    //     queue_index = queue_index->next; 
+        
+    //     if (queue_index == _queue_head){ 
+    //         //insert at end 
+    //         Node * prev_queue = queue_index->prev; 
+    //         queue_index->prev = node; 
+    //         node->next = queue_index; 
+    //         node->prev = prev_queue; 
+    //         prev_queue->next = node; 
+    //     }
+    // }
+
+
+    Node * temp = _queue_tail;
+    while ((temp->next != _queue_head) && (temp->next->runtime <= node->runtime)){
+        temp = temp->next;
     }
-    Node * queue_index = _queue_tail->next; 
-    while (queue_index->next != NULL) {
-        if (queue_index->runtime < node->runtime){ 
-            Node * prev_queue = queue_index->prev; 
-            queue_index->prev = node; 
-            node->next = queue_index; 
-            node->prev = prev_queue; 
-            prev_queue->next = node; 
-            break;
-        }
-         queue_index = queue_index->next; 
-         if (queue_index == _queue_head){ 
-             //insert at end 
-            Node * prev_queue = queue_index->prev; 
-            queue_index->prev = node; 
-            node->next = queue_index; 
-            node->prev = prev_queue; 
-            prev_queue->next = node; 
-         }
-    }
+        
+    Node * temp_next = temp->next;
+    temp->next = node;
+    node->prev = temp;
+    node->next = temp_next;
+    temp_next->prev = node;
+
     _queue_size++;
+
     pthread_mutex_unlock(&qlock);
+
     return SUCCESS;
 }
 

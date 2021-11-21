@@ -17,23 +17,19 @@
 #define NUM_MUTATION_FUNCS 2
 
 
-void *add(void* num){
+void add(int num, int runtime){
     Node * node = malloc(sizeof(Node));
-    float x = (float)rand()/(float)(RAND_MAX/1000);
-    node->runtime = x; 
-    node->id = (int)num;
+    node->runtime = runtime; 
+    node->id = num;
     queue_sorted_put(node);
-    pthread_exit(NULL);
 }
 
 
-void *rem(){
+void rem(){
     Node * prev;
     queue_get(&prev);
     node_print(prev); printf("\n");
     free(prev);
-
-    pthread_exit(NULL);
 }
 
 void _byte_flip(unsigned char in[INPUT_SIZE]){
@@ -76,13 +72,17 @@ int main(){
 
     int processorCount = 1; //default 
     pthread_attr_t *affinity_attr = NULL; 
-    // queue_get(&prev);
-    // node_print(prev); printf("\n");
-    // queue_print();
-    // free(prev);
 
-    // queue_get(&prev);
-    // queue_print();
+    add(1, 3);
+    add(2, 2);
+    add(3, 1);
+    add(4, 2);
+    add(5, 100);
+
+    queue_print();
+    avada_Qdavra();
+
+    return 0;
     processorCount = sysconf(_SC_NPROCESSORS_ONLN);
     printf("Number of logical cores: %d\n", processorCount);
 
