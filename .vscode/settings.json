@@ -7,7 +7,8 @@
         "perf_event.h": "c",
         "runtime_stats.h": "c",
         "stdlib.h": "c",
-        "random": "c"
+        "random": "c",
+        "ioctl.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

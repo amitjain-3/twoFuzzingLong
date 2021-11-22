@@ -46,39 +46,17 @@ void quicksort(unsigned char number[],int first,int last){
    }
 }
 
-// int m(){
-//     int num = 0;
-//     num = num*10 + 0; // nuum = 0
-//     if (this){
-//         //...
-//         num = num*10 + 1; // 1
-//     }
-//     else{
-//         num = num*10 + 2;
-//     }
-
-//     num = num*10 + 3; // 13
-
-//     return 1;
-// }
 void selection_sort(unsigned char a[]){ 
     /* a[0] to a[INPUT_SIZE-1] is the array to sort */
     int i,j;
-    /* advance the position through the entire array */
-    /*   (could do i < INPUT_SIZE-1 because single element is also min element) */
+   
     for (i = 0; i < INPUT_SIZE-1; i++)
     {
-        /* find the min element in the unsorted a[i .. INPUT_SIZE-1] */
-
-        /* assume the min is the first element */
         int jMin = i;
-        /* test against elements after i to find the smallest */
         for (j = i+1; j < INPUT_SIZE; j++)
         {
-            /* if this element is less, then it is the new minimum */
             if (a[j] < a[jMin])
             {
-                /* found new minimum; remember its index */
                 jMin = j;
             }
             /*usleep(2); 
@@ -87,7 +65,6 @@ void selection_sort(unsigned char a[]){
 
         if (jMin != i) 
         {
-            // swap(a[i], a[jMin]);
             unsigned char temp=a[i];
             a[i]=a[jMin];
             a[jMin]=temp;
@@ -95,6 +72,55 @@ void selection_sort(unsigned char a[]){
     }
 }
 
+void single_loop(char in[], int udelay){
+    for (int i = 0; i < INPUT_SIZE; i++)
+    {
+        volatile int x = 0;
+        x += 1;
+        usleep(udelay);
+    }
+}
+
+void double_loop(char in[], int udelay){
+    for (int i = 0; i < INPUT_SIZE; i++)
+    {
+        for (int j = i; j < INPUT_SIZE; j++)
+        {
+            volatile int x = 0;
+            x += 1;
+            usleep(udelay);
+        }
+    }
+}
+
+void triple_loop(char in[], int udelay){
+    for (int i = 0; i < INPUT_SIZE; i++)
+    {
+        for (int j = i; j < INPUT_SIZE; j++)
+        {
+            for (int k = j; k < INPUT_SIZE; k++){
+                volatile int x = 0;
+                x += 1;
+            }
+            usleep(udelay);
+        }
+    }
+}
+
+int _main(char in[]){
+
+    int udelay = in[1] * 1e2; // in milliseconds now
+
+    if (in[0] <= 0x30){
+        single_loop(in, udelay);
+    }
+    else if (in[0] <= 0xc0){
+        double_loop(in, udelay);
+    }
+    else{
+        triple_loop(in, udelay);
+    }
+}
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
                 int cpu, int group_fd, unsigned long flags)
@@ -106,9 +132,12 @@ static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
     return ret;
 }
 
+void run_test_program(char in[]){
+    // Program perf tools
+    _main(in);
+    //End timer
 
 
-int main(int argc, char ** argv){
     struct perf_event_attr pe;
     long long count;
     int fd;
@@ -155,5 +184,5 @@ int main(int argc, char ** argv){
     double elapsed = seconds + nanoseconds*1e-9;
 
     printf("Total time: : %f\n", elapsed);*/
-}
 
+}   
