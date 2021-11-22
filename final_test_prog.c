@@ -5,8 +5,7 @@
 #include <unistd.h>
 
 #include "include/node.h"
-
-#define COVERAGE_BYTE_SIZE 5
+#include "include/test_prog.h"
 
 // Bitmap storing coverage for each path->bit-index
 unsigned char coverage[COVERAGE_BYTE_SIZE] = {0};
@@ -99,7 +98,7 @@ int run_test_program(unsigned char in[], double * runtime, unsigned char coverag
     return 1;
 }   
 
-int get_coverage_count(){
+int get_coverage_count(unsigned char coverage_out[]){
     int count = 0;
     for (int i = 0; i < COVERAGE_BYTE_SIZE; i++){
         while (coverage[i] != 0){
@@ -122,10 +121,10 @@ int main(){
 
     // Print coverage
     for (int i = 0; i < COVERAGE_BYTE_SIZE; i++){
-        printf("%x ", coverage[i]);
+        printf("%x ", cov[i]);
     }
     printf("\nRuntime: %f\n", runtime);
-    printf("\nCov: %d\n", get_coverage_count());
+    printf("\nCov: %d\n", get_coverage_count(cov));
     
     return 0;
 }
