@@ -115,7 +115,6 @@ int main(){
     pthread_t * threads = malloc(sizeof(pthread_t) * processorCount); // Array of threads for each core
 
     cpu_set_t cpus; // ?
-    CPU_ZERO(&cpus); // TODO Changed pos to here outside the loop. Right?
 
     pthread_attr_t attr; // ?
     struct sched_param param;
@@ -129,6 +128,7 @@ int main(){
         // Assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop
 
         // Add cpu to set
+        CPU_ZERO(&cpus); // TODO Changed pos to here outside the loop. Right?
         CPU_SET(i, &cpus);
 
         // Set the affinity of thread to core
@@ -154,7 +154,6 @@ int main(){
     }
 
     queue_print();
-
 
     free(threads);
 

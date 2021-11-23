@@ -60,7 +60,7 @@ void triple_loop(unsigned char in[], int udelay){
 
 int _main(unsigned char in[]){
 
-    int udelay = in[1]/2; // in milliseconds now
+    int udelay = in[1]; // in milliseconds now
 
     if (in[0] <= 0xff){
         SET_COV(3);
@@ -114,7 +114,7 @@ int get_coverage_count(unsigned char coverage_out[]){
 }
 
 int main(){
-    unsigned char in[6] = "\x00\x00\x00\x00\x00\0";
+    unsigned char in[6] = "\x00\xff\xff\xff\xff\0";
     double runtime = 0;
     unsigned char cov[COVERAGE_BYTE_SIZE];
     run_test_program(in, &runtime, cov);
