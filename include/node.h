@@ -2,6 +2,8 @@
 #define NODE_H
 
 #define INPUT_SIZE 100
+#define RUNTIME_DOMAIN 0
+#define COVERAGE_DOMAIN 1
 
 #include <pthread.h>
 #include <stdlib.h>
@@ -15,6 +17,7 @@ typedef struct _node {
     char input[INPUT_SIZE];     // The input to the program
     unsigned int exit_status;   // The exit status of the program run with these inputs
     float runtime;              // The runtime when run with these inputs
+    int coverage; 
     struct _node * next;        // Next element in the queue
     struct _node * prev;        // Prev element in the queueu
 } Node;
@@ -31,7 +34,7 @@ int is_queue_valid__nolocks();
 void node_init(Node * node, int id);
 int queue_init();
 int queue_put(Node* node);
-int queue_sorted_put(Node* node);
+int queue_sorted_put(Node* node, int domain);
 int queue_get(Node ** return_node);
 void node_print(Node * node);
 void node_print__nolocks(Node * node);

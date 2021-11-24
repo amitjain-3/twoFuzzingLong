@@ -58,10 +58,38 @@ void triple_loop(unsigned char in[], int udelay){
     }
 }
 
+void no_loop(unsigned char in[], int udelay){ 
+    int unsigned max = in[0], min = in[0];
+    for(int i = 0; i < INPUT_SIZE-1; i++){ 
+        if ((in[i]) > max){ 
+            max = in[i]; 
+        }
+        if ((in[i]) < min){ 
+            min = in[i]; 
+        }
+        usleep(udelay);
+    }
+    //printf(" Max %d and Min %d \n",max,min);
+
+    if (max >= 0x70){ //need a bit shift into one of 2 MSB to hit this
+        SET_COV(7);
+    }
+
+    if (min != 0x30){ //atleast all 0's modified
+        SET_COV(8);
+    }
+
+    if (in[1] > min){ 
+        SET_COV(9);
+    }
+     
+}
+
+
+
 int _main(unsigned char in[]){
 
     int udelay = in[1]; // in milliseconds now
-
     if (in[0] <= 0xff){
         SET_COV(3);
         single_loop(in, udelay);
@@ -73,6 +101,10 @@ int _main(unsigned char in[]){
     if (in[0] <= 0x30){
         SET_COV(5);
         triple_loop(in, udelay);
+    }
+    if(in[0] <= 0x34){ 
+        SET_COV(6); 
+        no_loop(in, udelay);
     }
 
 }
@@ -113,7 +145,7 @@ int get_coverage_count(unsigned char coverage_out[]){
     return count;
 }
 
-int main(){
+/*int main(){
     unsigned char in[6] = "\x00\xff\xff\xff\xff\0";
     double runtime = 0;
     unsigned char cov[COVERAGE_BYTE_SIZE];
@@ -127,4 +159,4 @@ int main(){
     printf("\nCov: %d\n", get_coverage_count(cov));
     
     return 0;
-}
+}*/

@@ -8,6 +8,7 @@
 #define ERROR 0
 #define SUCCESS 1
 
+
 // Definiton of main queue structs. Include node.h for declaration in other files.
 Node * _queue_head = NULL;                          // The oldest elements are closest to the head
 Node * _queue_tail = NULL;                          // The newest elements are closest to the tail
@@ -97,7 +98,7 @@ int queue_put(Node* node){
 }
 
 
-int queue_sorted_put(Node* node){
+int queue_sorted_put(Node* node, int domain){
     pthread_mutex_lock(&qlock);
 
     if (!is_queue_valid__nolocks()){
@@ -106,8 +107,14 @@ int queue_sorted_put(Node* node){
     }
 
     Node * temp = _queue_tail;
-    while ((temp->next != _queue_head) && (temp->next->runtime >= node->runtime)){
-        temp = temp->next;
+    if (domain == RUNTIME_DOMAIN){ 
+        while ((temp->next != _queue_head) && (temp->next->runtime >= node->runtime)){
+            temp = temp->next;
+        }
+    } else {
+        while ((temp->next != _queue_head) && (temp->next->coverage >= node->coverage)){
+            temp = temp->next;
+        }
     }
         
     Node * temp_next = temp->next;
@@ -164,8 +171,7 @@ void node_print(Node * node){
 
 
 void node_print__nolocks(Node * node){
-    printf("{ID: %d RUN_TIME: %f}", node->id, node->runtime);
-
+    printf("{ID: %d RUN_TIME: %f COVERAGE: %d}", node->id, node->runtime, node->coverage);
     return;
 }
 
