@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
+#include <stdbool.h>
+
 
 #include "include/node.h"
 #include "include/runtime_stats.h"
@@ -88,7 +91,7 @@ void *fuzz_loop(void *fuzz_domain)
     // Random calcs--- temporary
     volatile int j = 0;
     volatile int k = 1212;
-    while (i++ < INT32_MAX)
+    while (i++ < 1000)
     {
         j = (k + 1230) / k; // random calc
 
@@ -101,9 +104,11 @@ void *fuzz_loop(void *fuzz_domain)
 
         //collect data on mutated input
         int exit_status = run_test_program(curr->input,&runtime,cov);
-
-        //enter input if interesting
+        
+        //enter input if interesting 
+        printf("current covreage count %d \n",get_coverage_count(cov));
         input_entry(curr,runtime,exit_status,cov,domain);
+        
 
         //curr->runtime = rand() % rand();
         // Check if interesting and add

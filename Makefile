@@ -2,7 +2,7 @@ fuzzer:
 	gcc -pthread -o fuzzer queue.c fuzzer.c
 
 all:
-	gcc -pthread -o all queue.c fuzzer.c final_test_prog.c
+	gcc -pthread -o all queue.c fuzzer.c final_test_prog.c runtime_stats.c -lm
 
 test:
 	gcc -o test final_test_prog.c

@@ -4,6 +4,7 @@
 #include <pthread.h> 
 #include "include/node.h"
 #include "include/test_prog.h"
+#include <math.h>
 
 
 
@@ -46,12 +47,14 @@ bool input_entry(Node* mutated_node,double execution_time, unsigned int exit_sta
     pthread_mutex_unlock(&mlock);
         
     if (entry){
-        node->runtime = execution_time; 
-        node->exit_status = exit_status;
-        node->coverage = coverage_count;
-        queue_sorted_put(mutated_node)
+        mutated_node->runtime = execution_time; 
+        mutated_node->exit_status = exit_status;
+        mutated_node->coverage = coverage_count;
+        queue_sorted_put(mutated_node,domain);
+        return true;
     } else { 
         printf("discard input - does not extend runtime");
+        return false;
     } 
 }
 
