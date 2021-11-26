@@ -4,6 +4,6 @@
 void capture_begin_time(); 
 void capture_end_time();
 float get_execution_time(); 
-void input_entry(float execution_time, unsigned int exit_status, int ID, char *mutated_input);
+bool input_entryinput_entry(Node* mutated_node,double execution_time, unsigned int exit_status, unsigned char in[],unsigned int domain);
 
 #endif

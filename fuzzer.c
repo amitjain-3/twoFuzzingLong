@@ -83,22 +83,31 @@ void *fuzz_loop(void *fuzz_domain)
     Node *curr;
     int i = 0;
     int domain = *((int *) fuzz_domain);
+    double runtime; 
+    unsigned char cov[COVERAGE_BYTE_SIZE];
     // Random calcs--- temporary
     volatile int j = 0;
     volatile int k = 1212;
-    while (i++ < 100)
+    while (i++ < INT32_MAX)
     {
         j = (k + 1230) / k; // random calc
 
-        // Get one input from queue
+        // Get one input from queue, should we be removing the element from queue? 
+        //if we want to keep, we need a way to track mutations so that we dont want to apply same one again
         queue_get(&curr);
 
         // Mutate it
         mutate(curr->input);
-        curr->runtime = rand() % rand();
 
+        //collect data on mutated input
+        int exit_status = run_test_program(curr->input,&runtime,cov);
+
+        //enter input if interesting
+        input_entry(curr,runtime,exit_status,cov,domain);
+
+        //curr->runtime = rand() % rand();
         // Check if interesting and add
-        queue_sorted_put(curr, domain);
+        //queue_sorted_put(curr, domain);
 
         // free(curr);
         usleep(0.1 * 1e6);

@@ -88,25 +88,29 @@ void no_loop(unsigned char in[], int udelay){
 
 
 int _main(unsigned char in[]){
-
+    int exit_status; 
     int udelay = in[1]; // in milliseconds now
     if (in[0] <= 0xff){
         SET_COV(3);
         single_loop(in, udelay);
+        exit_status = EXIT_SUCCESS; 
     }
     if (in[0] <= 0x7f){
         SET_COV(4);
         double_loop(in, udelay);
+        exit_status = EXIT_SUCCESS; 
     }
     if (in[0] <= 0x30){
         SET_COV(5);
         triple_loop(in, udelay);
+        exit_status = EXIT_FAILURE; 
     }
     if(in[0] <= 0x34){ 
         SET_COV(6); 
         no_loop(in, udelay);
+        exit_status = EXIT_SUCCESS; 
     }
-
+    return exit_status;
 }
 
 int run_test_program(unsigned char in[], double * runtime, unsigned char coverage_out[]){
@@ -115,7 +119,7 @@ int run_test_program(unsigned char in[], double * runtime, unsigned char coverag
     clock_gettime(CLOCK_REALTIME, &begin);
 
     // Run program
-    _main(in);
+    int exit_status = _main(in);
 
     // End timer
     clock_gettime(CLOCK_REALTIME, &end);
@@ -127,7 +131,7 @@ int run_test_program(unsigned char in[], double * runtime, unsigned char coverag
     memcpy(coverage_out, coverage, COVERAGE_BYTE_SIZE);
 
     // Return the exit code?
-    return 1;
+    return exit_status;
 }   
 
 int get_coverage_count(unsigned char coverage_out[]){

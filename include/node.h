@@ -17,7 +17,7 @@ typedef struct _node {
     char input[INPUT_SIZE];     // The input to the program
     unsigned int exit_status;   // The exit status of the program run with these inputs
     float runtime;              // The runtime when run with these inputs
-    int coverage; 
+    unsigned int coverage; 
     struct _node * next;        // Next element in the queue
     struct _node * prev;        // Prev element in the queueu
 } Node;
