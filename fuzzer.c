@@ -72,7 +72,10 @@ void interesting_inputs_to_queue(char *filename, int domain)
         run_test_program(node->input, &runtime , cov);
         node->runtime = runtime;
         node->coverage = get_coverage_count(cov);
-        printf("Coverage test input %d \n",node->coverage);
+        if (node->coverage > max_coverage_count){ 
+            max_coverage_count = node->coverage;
+        }
+        printf("Coverage test input %d, max coverage %d\n",node->coverage, max_coverage_count);
         queue_sorted_put(node, domain);
         // printf("%s\n", node->input);coverage
     }
@@ -106,7 +109,6 @@ void *fuzz_loop(void *fuzz_domain)
         int exit_status = run_test_program(curr->input,&runtime,cov);
         
         //enter input if interesting 
-        printf("current covreage count %d \n",get_coverage_count(cov));
         input_entry(curr,runtime,exit_status,cov,domain);
         
 

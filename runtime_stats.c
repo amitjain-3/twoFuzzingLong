@@ -10,8 +10,8 @@
 
 static volatile clock_t begin = 0;
 static volatile clock_t end = 0;
-static volatile float max_execution_time = 0; 
-static volatile float max_coverage_count = 0;
+volatile float max_execution_time = 0; 
+volatile int max_coverage_count = 0;
 pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
 #define PERCENT_CUTOFF 0.7 
 
@@ -33,16 +33,17 @@ bool input_entry(Node* mutated_node,double execution_time, unsigned int exit_sta
     int entry = 0; 
 
     pthread_mutex_lock(&mlock);
-    unsigned int coverage_count = get_coverage_count(coverage);
+    int coverage_count = get_coverage_count(coverage);
+    printf("max coverage count: %d ---- mutated input coverage %d  ---- Min coverage threshold for entry %f \n",max_coverage_count, coverage_count,floor(max_coverage_count * PERCENT_CUTOFF));
     //check if meaningful input, i.e if execution time > max_execution_time
     if (domain == RUNTIME_DOMAIN && execution_time > max_execution_time * PERCENT_CUTOFF){ 
+        entry = 1; 
         if (execution_time > max_execution_time)
             max_execution_time = execution_time; 
-        entry = 1; 
     } else if (domain == COVERAGE_DOMAIN && coverage_count > floor(max_coverage_count * PERCENT_CUTOFF)) {
+        entry = 1;
         if (coverage_count > max_coverage_count)
-            max_coverage_count = coverage_count; 
-        entry = 1; 
+            max_coverage_count = coverage_count;  
     }
     pthread_mutex_unlock(&mlock);
         
@@ -51,9 +52,10 @@ bool input_entry(Node* mutated_node,double execution_time, unsigned int exit_sta
         mutated_node->exit_status = exit_status;
         mutated_node->coverage = coverage_count;
         queue_sorted_put(mutated_node,domain);
+        printf("Adding node to queue \n");
         return true;
-    } else { 
-        printf("discard input - does not extend runtime");
+    } else {
+        printf("Removing node from queue \n");
         return false;
     } 
 }
