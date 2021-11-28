@@ -13,7 +13,7 @@ static volatile clock_t end = 0;
 volatile float max_execution_time = 0; 
 volatile int max_coverage_count = 0;
 pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
-#define PERCENT_CUTOFF 0.7 
+#define PERCENT_CUTOFF 0.1
 
 
 /*void capture_begin_time(){     

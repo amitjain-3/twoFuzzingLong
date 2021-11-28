@@ -16,11 +16,11 @@
 
 #define NUM_THREADS 8
 #define NUM_MUTATION_FUNCS 2
+#define COVERAGE_UPPER_MAX 9
 
 int total_loops = 0; 
 pthread_mutex_t llock; 
 
-int processorCount = 1;
 //char *current_fuzz_inputs;
 
 void _byte_flip(unsigned char in[INPUT_SIZE])
@@ -82,6 +82,10 @@ void *show_stats(){
         //fflush(stdout);
         //printf("\r------------------------------------");
         pthread_mutex_unlock(&mlock);
+        if (max_coverage_count == COVERAGE_UPPER_MAX){
+            printf("\n Found max coverage \n");
+            exit(0);
+        }
         usleep(1*1e6);
     } 
     //printf("| Number of threads:               |");
@@ -185,8 +189,9 @@ int main(int argc, char *argv[])
     {
         domain = COVERAGE_DOMAIN;
     }
-
+    int processorCount = 1;
     processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+    processorCount = 1;
     printf("Number of logical cores available: %d\n", processorCount);
     //current_fuzz_inputs = malloc(sizeof(int)*processorCount);
 
