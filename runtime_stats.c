@@ -34,7 +34,7 @@ bool input_entry(Node* mutated_node,double execution_time, unsigned int exit_sta
 
     pthread_mutex_lock(&mlock);
     int coverage_count = get_coverage_count(coverage);
-    printf("max coverage count: %d ---- mutated input coverage %d  ---- Min coverage threshold for entry %f \n",max_coverage_count, coverage_count,floor(max_coverage_count * PERCENT_CUTOFF));
+    //printf("max coverage count: %d ---- mutated input coverage %d  ---- Min coverage threshold for entry %f \n",max_coverage_count, coverage_count,floor(max_coverage_count * PERCENT_CUTOFF));
     //check if meaningful input, i.e if execution time > max_execution_time
     if (domain == RUNTIME_DOMAIN && execution_time > max_execution_time * PERCENT_CUTOFF){ 
         entry = 1; 
@@ -52,10 +52,10 @@ bool input_entry(Node* mutated_node,double execution_time, unsigned int exit_sta
         mutated_node->exit_status = exit_status;
         mutated_node->coverage = coverage_count;
         queue_sorted_put(mutated_node,domain);
-        printf("Adding node to queue \n");
+        //printf("Adding node to queue \n");
         return true;
     } else {
-        printf("Removing node from queue \n");
+        //printf("Removing node from queue \n");
         return false;
     } 
 }

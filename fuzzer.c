@@ -17,6 +17,11 @@
 #define NUM_THREADS 8
 #define NUM_MUTATION_FUNCS 2
 
+int total_loops = 0; 
+pthread_mutex_t llock; 
+
+int processorCount = 1;
+//char *current_fuzz_inputs;
 
 void _byte_flip(unsigned char in[INPUT_SIZE])
 {
@@ -52,6 +57,36 @@ int determineCoreCount()
 {
 }
 
+void *show_stats(){ 
+    printf("------------------------------------\n"); 
+    int temp_loops; 
+    int temp_queue_size = 0;
+    double elapsed_time;
+    clock_t start = clock();
+    
+    while (1){
+        clock_t end = clock();
+        elapsed_time = (end - start)/(double)CLOCKS_PER_SEC;
+        pthread_mutex_lock(&qlock);
+        temp_queue_size = _queue_size;
+        pthread_mutex_unlock(&qlock);
+        pthread_mutex_lock(&llock); 
+        temp_loops = total_loops; 
+        pthread_mutex_unlock(&llock);
+        pthread_mutex_lock(&mlock);
+        //fflush(stdout);
+        printf("\r| Max Coverage (# of Branches):    %d| Max Execution Time:   %0.2f| Total number of Loops:   %d| Size of queue:   %d| CPU TIME:    %0.6f",max_coverage_count, max_execution_time,temp_loops,temp_queue_size,elapsed_time);
+        fflush(stdout);
+        //fflush(stdout);
+        //printf("\r| Max Coverage count:             %d  |",max_coverage_count);
+        //fflush(stdout);
+        //printf("\r------------------------------------");
+        pthread_mutex_unlock(&mlock);
+        usleep(1*1e6);
+    } 
+    //printf("| Number of threads:               |");
+}
+
 void interesting_inputs_to_queue(char *filename, int domain)
 {
     FILE *fp = fopen(filename, "r");
@@ -75,7 +110,7 @@ void interesting_inputs_to_queue(char *filename, int domain)
         if (node->coverage > max_coverage_count){ 
             max_coverage_count = node->coverage;
         }
-        printf("Coverage test input %d, max coverage %d\n",node->coverage, max_coverage_count);
+        //printf("Coverage test input %d, max coverage %d\n",node->coverage, max_coverage_count);
         queue_sorted_put(node, domain);
         // printf("%s\n", node->input);coverage
     }
@@ -96,6 +131,10 @@ void *fuzz_loop(void *fuzz_domain)
     volatile int k = 1212;
     while (i++ < 1000)
     {
+        pthread_mutex_lock(&llock);
+        total_loops+=1;
+        pthread_mutex_unlock(&llock);
+
         j = (k + 1230) / k; // random calc
 
         // Get one input from queue, should we be removing the element from queue? 
@@ -111,7 +150,6 @@ void *fuzz_loop(void *fuzz_domain)
         //enter input if interesting 
         input_entry(curr,runtime,exit_status,cov,domain);
         
-
         //curr->runtime = rand() % rand();
         // Check if interesting and add
         //queue_sorted_put(curr, domain);
@@ -148,23 +186,23 @@ int main(int argc, char *argv[])
         domain = COVERAGE_DOMAIN;
     }
 
-    int processorCount = 1; // Default
     processorCount = sysconf(_SC_NPROCESSORS_ONLN);
     printf("Number of logical cores available: %d\n", processorCount);
+    //current_fuzz_inputs = malloc(sizeof(int)*processorCount);
 
-    pthread_t *threads = malloc(sizeof(pthread_t) * processorCount); // Array of threads for each core
-
+    pthread_t *threads = malloc(sizeof(pthread_t) * (processorCount)); // Array of threads for each core
+    pthread_t print_thread;
     cpu_set_t cpus; // ?
 
     pthread_attr_t attr; // ?
     struct sched_param param;
-
+    pthread_create(&print_thread,NULL,show_stats,NULL);
     /*** Now setup the queue ***/
     queue_init();
     interesting_inputs_to_queue("inputs/inputs1.txt", domain);
 
     /*** Main thread creation- one for each core ***/
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < processorCount; i++)
     {
         // Assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop
 
@@ -179,7 +217,7 @@ int main(int argc, char *argv[])
         pthread_attr_getschedparam(&attr, &param);
         param.sched_priority += 0; // Custom prio level?
         pthread_attr_setschedparam(&attr, &param);
-
+        
         pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpus);
         int rc = pthread_create(&threads[i], &attr, fuzz_loop, &domain);
         if (rc)
