@@ -22,23 +22,21 @@ typedef struct _node {
     struct _node * prev;        // Prev element in the queueu
 } Node;
 
-
 extern Node * _queue_head;      // The oldest elements are closest to the head
 extern Node * _queue_tail;      // The newest elements are closest to the tail
 extern int _queue_size;         // Size of the queue: -1 for invalid
 extern pthread_mutex_t qlock;   // Using static initializer: change if sharing between processes
 
-
-int queue_size();
+int avada_Qdavra();
 int is_queue_valid__nolocks();
-void node_init(Node * node, int id);
-int queue_init();
-int queue_put(Node* node);
-int queue_sorted_put(Node* node, int domain);
 int queue_get(Node ** return_node);
+int queue_init();
+int queue_print();
+int queue_put(Node* node);
+int queue_size();
+int queue_sorted_put(Node* node, int domain);
+void node_init(Node * node, int id);
 void node_print(Node * node);
 void node_print__nolocks(Node * node);
-int queue_print();
-int avada_Qdavra();
 
 #endif

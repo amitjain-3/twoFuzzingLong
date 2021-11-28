@@ -4,11 +4,12 @@
 #include <stdbool.h>
 #include "node.h"
 
-void capture_begin_time(); 
-void capture_end_time();
-float get_execution_time(); 
-bool input_entry(Node* mutated_node,double execution_time, unsigned int exit_status, unsigned char in[],unsigned int domain);
+extern pthread_mutex_t mlock;
 extern volatile float max_execution_time; 
 extern volatile int max_coverage_count;
-extern pthread_mutex_t mlock;
+extern char max_node_input[INPUT_SIZE]; 
+
+
+bool is_interesting(char mutated_input[], double execution_time, unsigned int exit_status, unsigned char in[],unsigned int domain);
+
 #endif

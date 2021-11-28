@@ -85,11 +85,17 @@ int queue_put(Node* node){
         return ERROR;
     }
 
-    Node * queue_tail_next = _queue_tail->next;
-    _queue_tail->next = node;
-    node->prev = _queue_tail;
-    node->next = queue_tail_next;
-    queue_tail_next->prev = node;
+    // Node * queue_tail_next = _queue_tail->next;
+    // _queue_tail->next = node;
+    // node->prev = _queue_tail;
+    // node->next = queue_tail_next;
+    // queue_tail_next->prev = node;
+
+    Node * head_prev = _queue_head->prev;
+    head_prev->next = node;
+    node->prev = head_prev;
+    node->next = _queue_head;
+    _queue_head->prev = node;
 
     _queue_size++;
 

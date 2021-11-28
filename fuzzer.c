@@ -1,27 +1,27 @@
 #define _GNU_SOURCE
 
+#include <limits.h>
 #include <pthread.h>
 #include <sched.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
-#include <limits.h>
-#include <stdbool.h>
 
 
 #include "include/node.h"
 #include "include/runtime_stats.h"
 #include "include/test_prog.h"
 
-#define NUM_THREADS 8
-#define NUM_MUTATION_FUNCS 2
 #define COVERAGE_UPPER_MAX 9
+#define NUM_MUTATION_FUNCS 2
+#define NUM_THREADS 8
 
 int total_loops = 0; 
 pthread_mutex_t llock; 
 
-//char *current_fuzz_inputs;
 
 void _byte_flip(unsigned char in[INPUT_SIZE])
 {
@@ -36,10 +36,10 @@ void _bit_flip(unsigned char in[INPUT_SIZE])
     in[byte_num] ^= (0x1 << bit_num);
 }
 
-typedef void (*func_t)(unsigned char[INPUT_SIZE]);
-
 int mutate(unsigned char in[INPUT_SIZE])
 {
+    typedef void (*func_t)(unsigned char[INPUT_SIZE]);
+
     func_t funcs[NUM_MUTATION_FUNCS] = {_byte_flip, _bit_flip};
 
     int func_num = rand() % NUM_MUTATION_FUNCS;
@@ -53,42 +53,40 @@ void print_hex(const unsigned char s[INPUT_SIZE])
     printf("\n");
 }
 
-int determineCoreCount()
-{
-}
-
 void *show_stats(){ 
-    printf("------------------------------------\n"); 
+    
     int temp_loops; 
     int temp_queue_size = 0;
     double elapsed_time;
     clock_t start = clock();
+
+    printf("------------------------------------\n"); 
     
     while (1){
         clock_t end = clock();
         elapsed_time = (end - start)/(double)CLOCKS_PER_SEC;
+
         pthread_mutex_lock(&qlock);
         temp_queue_size = _queue_size;
         pthread_mutex_unlock(&qlock);
+
         pthread_mutex_lock(&llock); 
         temp_loops = total_loops; 
         pthread_mutex_unlock(&llock);
+
         pthread_mutex_lock(&mlock);
-        //fflush(stdout);
-        printf("\r| Max Coverage (# of Branches):    %d| Max Execution Time:   %0.2f| Total number of Loops:   %d| Size of queue:   %d| CPU TIME:    %0.6f",max_coverage_count, max_execution_time,temp_loops,temp_queue_size,elapsed_time);
+        printf("\r| Max Coverage (# of Branches):    %d| Max Execution Time:   %0.2f| Total number of Loops:   %d| Size of queue:   %d| CPU TIME:    %0.6f", 
+            max_coverage_count, max_execution_time, temp_loops, temp_queue_size, elapsed_time);
         fflush(stdout);
-        //fflush(stdout);
-        //printf("\r| Max Coverage count:             %d  |",max_coverage_count);
-        //fflush(stdout);
-        //printf("\r------------------------------------");
         pthread_mutex_unlock(&mlock);
+
         if (max_coverage_count == COVERAGE_UPPER_MAX){
             printf("\n Found max coverage \n");
             exit(0);
         }
+
         usleep(1*1e6);
     } 
-    //printf("| Number of threads:               |");
 }
 
 void interesting_inputs_to_queue(char *filename, int domain)
@@ -111,14 +109,22 @@ void interesting_inputs_to_queue(char *filename, int domain)
         run_test_program(node->input, &runtime , cov);
         node->runtime = runtime;
         node->coverage = get_coverage_count(cov);
+
         if (node->coverage > max_coverage_count){ 
             max_coverage_count = node->coverage;
+            memcpy(max_node_input, node->input, INPUT_SIZE);
         }
+
+        if (node->runtime > max_execution_time){ 
+            max_coverage_count = node->coverage;
+            memcpy(max_node_input, node->input, INPUT_SIZE);
+        }
+        
         //printf("Coverage test input %d, max coverage %d\n",node->coverage, max_coverage_count);
         queue_sorted_put(node, domain);
         // printf("%s\n", node->input);coverage
     }
-
+    
     fclose(fp);
     return;
 }
@@ -126,49 +132,57 @@ void interesting_inputs_to_queue(char *filename, int domain)
 void *fuzz_loop(void *fuzz_domain)
 {
     Node *curr;
-    int i = 0;
+
     int domain = *((int *) fuzz_domain);
     double runtime; 
     unsigned char cov[COVERAGE_BYTE_SIZE];
-    // Random calcs--- temporary
-    volatile int j = 0;
-    volatile int k = 1212;
+    char mutated_input[INPUT_SIZE] = {0}; 
+
+    int i = 0;
     while (i++ < 1000)
     {
         pthread_mutex_lock(&llock);
         total_loops+=1;
         pthread_mutex_unlock(&llock);
 
-        j = (k + 1230) / k; // random calc
-
         // Get one input from queue, should we be removing the element from queue? 
-        //if we want to keep, we need a way to track mutations so that we dont want to apply same one again
+        // If we want to keep, we need a way to track mutations so that we dont want to apply same one again
         queue_get(&curr);
 
         // Mutate it
-        mutate(curr->input);
+        memcpy(mutated_input, curr->input, INPUT_SIZE);
+        mutate(mutated_input);
 
         //collect data on mutated input
-        int exit_status = run_test_program(curr->input,&runtime,cov);
-        
+        int exit_status = run_test_program(curr->input, &runtime, cov);
+               
         //enter input if interesting 
-        input_entry(curr,runtime,exit_status,cov,domain);
-        
-        //curr->runtime = rand() % rand();
-        // Check if interesting and add
-        //queue_sorted_put(curr, domain);
+        if (is_interesting(mutated_input, runtime, exit_status, cov, domain)){
+            Node * mutated_node = malloc(sizeof(Node));
+            node_init(mutated_node, rand()%10000);
+            memcpy(mutated_node->input, mutated_input, INPUT_SIZE);
+            mutated_node->runtime = runtime; 
+            mutated_node->exit_status = exit_status;
+            mutated_node->coverage = get_coverage_count(cov);
 
-        // free(curr);
-        usleep(0.1 * 1e6);
+            queue_put(mutated_node);
+            // free(curr);
+            // queue_sorted_put(mutated_node, domain);
+        }
+        else {
+            // queue_put(curr);
+            // queue_sorted_put(curr, domain);
+        }
+        queue_put(curr);
+        // queue_sorted_put(curr, domain);
     }
 
     return NULL;
 }
 
 int main(int argc, char *argv[])
-{
-    /*** First do some system profiling FOR LINUX ***/
-    // Number of cores
+{   
+    /*** Parse inputs ***/
     int domain;
 
     if (argc != 2)
@@ -189,9 +203,11 @@ int main(int argc, char *argv[])
     {
         domain = COVERAGE_DOMAIN;
     }
+
+    /*** First do some system profiling FOR LINUX ***/
+    // Get num cores
     int processorCount = 1;
     processorCount = sysconf(_SC_NPROCESSORS_ONLN);
-    processorCount = 1;
     printf("Number of logical cores available: %d\n", processorCount);
     //current_fuzz_inputs = malloc(sizeof(int)*processorCount);
 
@@ -202,6 +218,10 @@ int main(int argc, char *argv[])
     pthread_attr_t attr; // ?
     struct sched_param param;
     pthread_create(&print_thread,NULL,show_stats,NULL);
+
+    // Set the seed for the random number generator
+    // srand((unsigned) time(NULL));
+    
     /*** Now setup the queue ***/
     queue_init();
     interesting_inputs_to_queue("inputs/inputs1.txt", domain);
@@ -212,7 +232,7 @@ int main(int argc, char *argv[])
         // Assign cpu mask here in cpus and use set affinity passing cpu to create attribute, pass attr to pthread_create on each loop
 
         // Add cpu to set
-        CPU_ZERO(&cpus); // TODO Changed pos to here outside the loop. Right?
+        CPU_ZERO(&cpus);
         CPU_SET(i, &cpus);
 
         // Set the affinity of thread to core
@@ -234,8 +254,7 @@ int main(int argc, char *argv[])
 
     /*** Cleanup ***/
     // Join each thread
-    for (int i = 0; i < 1; i++)
-    {
+    for (int i = 0; i < 1; i++) {
         pthread_join(threads[i], NULL);
     }
 
