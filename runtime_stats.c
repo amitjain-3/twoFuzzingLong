@@ -13,6 +13,7 @@
 volatile float max_execution_time = 0; 
 volatile int max_coverage_count = 0;
 char max_node_input[INPUT_SIZE] = {0}; 
+
 pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
 
 

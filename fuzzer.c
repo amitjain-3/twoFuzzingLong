@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,37 +11,70 @@
 #include <time.h>
 #include <unistd.h>
 
-
 #include "include/node.h"
 #include "include/runtime_stats.h"
 #include "include/test_prog.h"
 
-#define COVERAGE_UPPER_MAX 9
-#define NUM_MUTATION_FUNCS 2
+#define COVERAGE_UPPER_MAX 10
+#define NUM_MUTATION_FUNCS 6
 #define NUM_THREADS 8
 
 int total_loops = 0; 
 pthread_mutex_t llock; 
 
 
+void int_handler (int signum){
+    // Destroy queue stuff
+    avada_Qdavra();
+    pthread_mutex_destroy(&qlock);
+    printf("\nQuitting...\n");
+    exit(0);
+}
+
 void _byte_flip(unsigned char in[INPUT_SIZE])
 {
     int byte_num = rand() % INPUT_SIZE;
-    in[byte_num] ^= 0xff;
+    in[byte_num] ^= (unsigned)0xff;
 }
 
 void _bit_flip(unsigned char in[INPUT_SIZE])
 {
     int byte_num = rand() % INPUT_SIZE;
     int bit_num = rand() % 8;
-    in[byte_num] ^= (0x1 << bit_num);
+    in[byte_num] ^= (unsigned)(0x1 << bit_num);
+}
+
+void _byte_set(unsigned char in[INPUT_SIZE])
+{
+    int byte_num = rand() % INPUT_SIZE;
+    in[byte_num] |= (unsigned)0xff;
+}
+
+void _bit_set(unsigned char in[INPUT_SIZE])
+{
+    int byte_num = rand() % INPUT_SIZE;
+    int bit_num = rand() % 8;
+    in[byte_num] |= (unsigned)(0x1 << bit_num);
+}
+
+void _byte_clear(unsigned char in[INPUT_SIZE])
+{
+    int byte_num = rand() % INPUT_SIZE;
+    in[byte_num] &= ~(unsigned)0xff;
+}
+
+void _bit_clear(unsigned char in[INPUT_SIZE])
+{
+    int byte_num = rand() % INPUT_SIZE;
+    int bit_num = rand() % 8;
+    in[byte_num] &= ~(unsigned)(0x1 << bit_num);
 }
 
 int mutate(unsigned char in[INPUT_SIZE])
 {
     typedef void (*func_t)(unsigned char[INPUT_SIZE]);
 
-    func_t funcs[NUM_MUTATION_FUNCS] = {_byte_flip, _bit_flip};
+    func_t funcs[NUM_MUTATION_FUNCS] = {_byte_flip, _bit_flip, _byte_set, _bit_set, _byte_clear, _bit_clear};
 
     int func_num = rand() % NUM_MUTATION_FUNCS;
     funcs[func_num](in);
@@ -48,9 +82,17 @@ int mutate(unsigned char in[INPUT_SIZE])
 
 void print_hex(const unsigned char s[INPUT_SIZE])
 {
-    while (*s)
-        printf("%02x", (unsigned int)*s++);
+    for (int i; i < INPUT_SIZE; i++)
+        printf("%x-", (unsigned int)s[i]);
+        fflush(stdout);
     printf("\n");
+
+    FILE *fp;
+
+    fp = fopen("max_results.bin","wb");  // w for write, b for binary
+
+    fwrite(s, INPUT_SIZE, 1, fp); // write 10 bytes from our buffer
+    fclose(fp);
 }
 
 void *show_stats(){ 
@@ -82,6 +124,12 @@ void *show_stats(){
 
         if (max_coverage_count == COVERAGE_UPPER_MAX){
             printf("\n Found max coverage \n");
+            printf("------------------------------------\n"); 
+
+            print_hex(max_node_input);
+
+            printf("------------------------------------\n"); 
+
             exit(0);
         }
 
@@ -139,7 +187,7 @@ void *fuzz_loop(void *fuzz_domain)
     char mutated_input[INPUT_SIZE] = {0}; 
 
     int i = 0;
-    while (i++ < 1000)
+    while (i++ < 5000)
     {
         pthread_mutex_lock(&llock);
         total_loops+=1;
@@ -169,12 +217,15 @@ void *fuzz_loop(void *fuzz_domain)
             // free(curr);
             // queue_sorted_put(mutated_node, domain);
         }
-        else {
+        // else {
             // queue_put(curr);
             // queue_sorted_put(curr, domain);
-        }
-        queue_put(curr);
-        // queue_sorted_put(curr, domain);
+        // }
+        // queue_put(curr);
+        curr->coverage = 0;
+        if (queue_size() < 500)
+            queue_put(curr);
+            // queue_sorted_put(curr, domain);
     }
 
     return NULL;
@@ -182,6 +233,8 @@ void *fuzz_loop(void *fuzz_domain)
 
 int main(int argc, char *argv[])
 {   
+    signal(SIGINT, int_handler);
+
     /*** Parse inputs ***/
     int domain;
 
@@ -220,7 +273,7 @@ int main(int argc, char *argv[])
     pthread_create(&print_thread,NULL,show_stats,NULL);
 
     // Set the seed for the random number generator
-    // srand((unsigned) time(NULL));
+    srand((unsigned) time(NULL));
     
     /*** Now setup the queue ***/
     queue_init();
@@ -258,7 +311,6 @@ int main(int argc, char *argv[])
         pthread_join(threads[i], NULL);
     }
 
-    queue_print();
 
     free(threads);
 

@@ -7,12 +7,9 @@
 #include "include/node.h"
 #include "include/test_prog.h"
 
-// Bitmap storing coverage for each path->bit-index
-unsigned char coverage[COVERAGE_BYTE_SIZE] = {0};
-
 #define SET_COV(pos) (coverage[pos/8] |= 1<<(pos%8));
 
-void single_loop(unsigned char in[], int udelay){
+void single_loop(unsigned char in[], int udelay, unsigned char coverage[]){
     for (int i = 0; i < INPUT_SIZE; i++)
     {
         volatile int x = 0;
@@ -21,7 +18,7 @@ void single_loop(unsigned char in[], int udelay){
     }
 }
 
-void double_loop(unsigned char in[], int udelay){
+void double_loop(unsigned char in[], int udelay, unsigned char coverage[]){
     for (int i = 0; i < INPUT_SIZE; i++){   
         if (in[2] <= 0x7f){
             SET_COV(0);
@@ -37,7 +34,7 @@ void double_loop(unsigned char in[], int udelay){
     }
 }
 
-void triple_loop(unsigned char in[], int udelay){
+void triple_loop(unsigned char in[], int udelay, unsigned char coverage[]){
     for (int i = 0; i < INPUT_SIZE; i++){
         if (in[3] <= 0x7f){
             SET_COV(1);
@@ -58,7 +55,7 @@ void triple_loop(unsigned char in[], int udelay){
     }
 }
 
-void no_loop(unsigned char in[], int udelay){ 
+void no_loop(unsigned char in[], int udelay, unsigned char coverage[]){ 
     int unsigned max = in[0], min = in[0];
     for(int i = 0; i < INPUT_SIZE-1; i++){ 
         if ((in[i]) > max){ 
@@ -85,29 +82,33 @@ void no_loop(unsigned char in[], int udelay){
      
 }
 
-int _main(unsigned char in[]){
+int _main(unsigned char in[], unsigned char coverage[]){
     int exit_status; 
     int udelay = in[1]; // in milliseconds now
     if (in[0] <= 0xff){
         SET_COV(3);
-        single_loop(in, udelay);
+        single_loop(in, udelay, coverage);
         exit_status = EXIT_SUCCESS; 
     }
     if (in[0] <= 0x7f){
         SET_COV(4);
-        double_loop(in, udelay);
+        double_loop(in, udelay, coverage);
         exit_status = EXIT_SUCCESS; 
     }
     if (in[0] <= 0x30){
         SET_COV(5);
-        triple_loop(in, udelay);
+        triple_loop(in, udelay, coverage);
         exit_status = EXIT_FAILURE; 
     }
     if(in[0] <= 0x34){ 
         SET_COV(6); 
-        no_loop(in, udelay);
+        no_loop(in, udelay, coverage);
         exit_status = EXIT_SUCCESS; 
     }
+    if (in[5] == 0x69){
+        SET_COV(10);
+    }
+
     return exit_status;
 }
 
@@ -117,7 +118,8 @@ int run_test_program(unsigned char in[], double * runtime, unsigned char coverag
     clock_gettime(CLOCK_REALTIME, &begin);
 
     // Run program
-    int exit_status = _main(in);
+    unsigned char coverage[COVERAGE_BYTE_SIZE] = {0};
+    int exit_status = _main(in, coverage);
 
     // End timer
     clock_gettime(CLOCK_REALTIME, &end);
@@ -134,13 +136,16 @@ int run_test_program(unsigned char in[], double * runtime, unsigned char coverag
 
 int get_coverage_count(unsigned char coverage_out[]){
     int count = 0;
+    unsigned char temp[COVERAGE_BYTE_SIZE];
+    memcpy(temp, coverage_out, COVERAGE_BYTE_SIZE);
+
     for (int i = 0; i < COVERAGE_BYTE_SIZE; i++){
-        while (coverage[i] != 0){
-            if (coverage[i] & 0x01){
+        while (temp[i] != 0){
+            if (temp[i] & 0x01){
                 count++;
             }
             
-            coverage[i] >>= 1;
+            temp[i] >>= 1;
         }
     }
 
