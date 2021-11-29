@@ -15,7 +15,7 @@
 #include "include/runtime_stats.h"
 #include "include/test_prog.h"
 
-#define COVERAGE_UPPER_MAX 10
+#define COVERAGE_UPPER_MAX 9
 #define NUM_MUTATION_FUNCS 6
 #define NUM_THREADS 8
 
@@ -82,10 +82,10 @@ int mutate(unsigned char in[INPUT_SIZE])
 
 void print_hex(const unsigned char s[INPUT_SIZE])
 {
-    for (int i; i < INPUT_SIZE; i++)
-        printf("%x-", (unsigned int)s[i]);
-        fflush(stdout);
-    printf("\n");
+    // for (int i; i < INPUT_SIZE; i++)
+    //     printf("%x-", (unsigned int)s[i]);
+    //     fflush(stdout);
+    // printf("\n");
 
     FILE *fp;
 
@@ -100,13 +100,16 @@ void *show_stats(){
     int temp_loops; 
     int temp_queue_size = 0;
     double elapsed_time;
-    clock_t start = clock();
+    // clock_t start = clock();
 
-    printf("------------------------------------\n"); 
+    struct timespec begin, end; 
+    clock_gettime(CLOCK_REALTIME, &begin);
+
+    // printf("------------------------------------\n"); 
     
     while (1){
-        clock_t end = clock();
-        elapsed_time = (end - start)/(double)CLOCKS_PER_SEC;
+        // clock_t end = clock();
+        // elapsed_time = (end - start)/(double)CLOCKS_PER_SEC;
 
         pthread_mutex_lock(&qlock);
         temp_queue_size = _queue_size;
@@ -117,18 +120,27 @@ void *show_stats(){
         pthread_mutex_unlock(&llock);
 
         pthread_mutex_lock(&mlock);
-        printf("\r| Max Coverage (# of Branches):    %d| Max Execution Time:   %0.2f| Total number of Loops:   %d| Size of queue:   %d| CPU TIME:    %0.6f", 
-            max_coverage_count, max_execution_time, temp_loops, temp_queue_size, elapsed_time);
+        // printf("\r| Max Coverage (# of Branches):    %d| Max Execution Time:   %0.2f| Total number of Loops:   %d| Size of queue:   %d| CPU TIME:    %0.6f", 
+        //     max_coverage_count, max_execution_time, temp_loops, temp_queue_size, elapsed_time);
+        // printf("\r%d, %0.2f, %d, %d, %0.6f", 
+        //     max_coverage_count, max_execution_time, temp_loops, temp_queue_size, elapsed_time);
         fflush(stdout);
         pthread_mutex_unlock(&mlock);
 
         if (max_coverage_count == COVERAGE_UPPER_MAX){
-            printf("\n Found max coverage \n");
-            printf("------------------------------------\n"); 
+            clock_gettime(CLOCK_REALTIME, &end);
+            long seconds = end.tv_sec - begin.tv_sec;
+            long nanoseconds = end.tv_nsec - begin.tv_nsec;
+            elapsed_time = seconds + nanoseconds*1e-9;
+
+            printf("%d, %0.2f, %d, %d, %0.6f", 
+            max_coverage_count, max_execution_time, temp_loops, temp_queue_size, elapsed_time);
+            // printf("\n Found max coverage \n");
+            // printf("------------------------------------\n"); 
 
             print_hex(max_node_input);
 
-            printf("------------------------------------\n"); 
+            // printf("------------------------------------\n"); 
 
             exit(0);
         }
@@ -187,8 +199,12 @@ void *fuzz_loop(void *fuzz_domain)
     char mutated_input[INPUT_SIZE] = {0}; 
 
     int i = 0;
-    while (i++ < 5000)
-    {
+    while (1) //i++ < 500000)
+    {   
+        while (!queue_size()){
+            usleep(1e3);
+        };
+
         pthread_mutex_lock(&llock);
         total_loops+=1;
         pthread_mutex_unlock(&llock);
@@ -213,9 +229,9 @@ void *fuzz_loop(void *fuzz_domain)
             mutated_node->exit_status = exit_status;
             mutated_node->coverage = get_coverage_count(cov);
 
-            queue_put(mutated_node);
+            // queue_put(mutated_node);
             // free(curr);
-            // queue_sorted_put(mutated_node, domain);
+            queue_sorted_put(mutated_node, domain);
         }
         // else {
             // queue_put(curr);
@@ -224,8 +240,8 @@ void *fuzz_loop(void *fuzz_domain)
         // queue_put(curr);
         curr->coverage = 0;
         if (queue_size() < 500)
-            queue_put(curr);
-            // queue_sorted_put(curr, domain);
+            // queue_put(curr);
+            queue_sorted_put(curr, domain);
     }
 
     return NULL;
@@ -260,8 +276,8 @@ int main(int argc, char *argv[])
     /*** First do some system profiling FOR LINUX ***/
     // Get num cores
     int processorCount = 1;
-    processorCount = sysconf(_SC_NPROCESSORS_ONLN);
-    printf("Number of logical cores available: %d\n", processorCount);
+    // processorCount = sysconf(_SC_NPROCESSORS_ONLN);
+    // printf("Number of logical cores available: %d\n", processorCount);
     //current_fuzz_inputs = malloc(sizeof(int)*processorCount);
 
     pthread_t *threads = malloc(sizeof(pthread_t) * (processorCount)); // Array of threads for each core

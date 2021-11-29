@@ -8,7 +8,7 @@
 #include "include/runtime_stats.h"
 #include "include/test_prog.h"
 
-#define PERCENT_CUTOFF 0.1
+#define PERCENT_CUTOFF 0.5
 
 volatile float max_execution_time = 0; 
 volatile int max_coverage_count = 0;
@@ -27,18 +27,21 @@ bool is_interesting(char mutated_input[], double execution_time, unsigned int ex
     //check if meaningful input, i.e if execution time > max_execution_time
     if (domain == RUNTIME_DOMAIN && execution_time >= max_execution_time * PERCENT_CUTOFF){ 
         entry = true; 
-        if (execution_time > max_execution_time){
-            max_execution_time = execution_time; 
-            memcpy(max_node_input, mutated_input, INPUT_SIZE);
-        }
+        
 
     } else if (domain == COVERAGE_DOMAIN && coverage_count >= floor(max_coverage_count * PERCENT_CUTOFF)) {
         entry = true;
-        if (coverage_count > max_coverage_count){
-            max_coverage_count = coverage_count; 
-            memcpy(max_node_input, mutated_input, INPUT_SIZE);
-        } 
+        
     }
+
+    if (execution_time > max_execution_time){
+        max_execution_time = execution_time; 
+        memcpy(max_node_input, mutated_input, INPUT_SIZE);
+    }
+    if (coverage_count > max_coverage_count){
+        max_coverage_count = coverage_count; 
+        memcpy(max_node_input, mutated_input, INPUT_SIZE);
+    } 
 
     pthread_mutex_unlock(&mlock);
     return entry;

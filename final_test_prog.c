@@ -84,7 +84,8 @@ void no_loop(unsigned char in[], int udelay, unsigned char coverage[]){
 
 int _main(unsigned char in[], unsigned char coverage[]){
     int exit_status; 
-    int udelay = in[1]; // in milliseconds now
+    // int udelay = in[1]; // in milliseconds now
+    int udelay = 0; // in milliseconds now
     if (in[0] <= 0xff){
         SET_COV(3);
         single_loop(in, udelay, coverage);
@@ -105,9 +106,9 @@ int _main(unsigned char in[], unsigned char coverage[]){
         no_loop(in, udelay, coverage);
         exit_status = EXIT_SUCCESS; 
     }
-    if (in[5] == 0x69){
-        SET_COV(10);
-    }
+    // if (in[5] == 0x69){
+    //     SET_COV(10);
+    // }
 
     return exit_status;
 }
