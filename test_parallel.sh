@@ -1,5 +1,6 @@
 #!/bin/bash
-for i in {1..100}
+
+for i in $(seq 100)
 do
-   ./all coverage >> out.csv
+   ./all coverage >> single_out.csv
 done
