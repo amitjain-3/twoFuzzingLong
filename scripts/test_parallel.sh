@@ -1,10 +1,9 @@
 #!/bin/bash
 rm temp.txt
 
-for i in $(seq 10)
+for i in $(seq 100)
 do
-   ./multiprocessing.sh >> temp.txt
+   ./scripts/multiprocessing.sh >> data/temp.txt
 done
 
-python filter.py > ../data/multiprocessing_out.csv
-
+python scripts/filter.py > data/multiprocessing_out.csv

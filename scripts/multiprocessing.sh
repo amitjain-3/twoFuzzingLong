@@ -4,7 +4,7 @@ declare -a pids
 
 for i in $(seq 8)
 do
-    ./../all coverage &
+    ./all coverage &
     pids[${i}]=$!
     taskset -cp $(($i-1)) ${pids[${i}]} > /dev/null
 done
