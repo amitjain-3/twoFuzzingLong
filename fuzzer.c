@@ -141,7 +141,7 @@ void *show_stats(){
             double elapsed_time_1 = seconds_1 + nanoseconds_1*1e-9;
             double elapsed_time_2 = seconds_2 + nanoseconds_2*1e-9;
 
-            printf(" %d, %0.2f, %d, %d, %0.6f, %0.6f, %0.6f\n", 
+            printf("%d, %0.2f, %d, %d, %0.6f, %0.6f, %0.6f\n", 
             max_coverage_count, max_execution_time, temp_loops, temp_queue_size, elapsed_time, elapsed_time_1, elapsed_time_2);
             // printf("\n Found max coverage \n");
             // printf("------------------------------------\n"); 
