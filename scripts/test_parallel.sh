@@ -1,7 +1,7 @@
 #!/bin/bash
 rm temp.txt
 
-for i in $(seq 100)
+for i in $(seq 10)
 do
    ./scripts/multiprocessing.sh >> data/temp.txt
 done
