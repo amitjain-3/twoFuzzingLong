@@ -2,7 +2,7 @@
 
 declare -a pids
 
-for i in $(seq 6)
+for i in $(seq 2)
 do
     ./all coverage &
     pids[${i}]=$!

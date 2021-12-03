@@ -9,7 +9,7 @@ def myFunc(e):
 
 
 for i, line in enumerate(lines):
-    if not i%8:
-        temp = sorted(lines[i:i+8], key=myFunc)
+    if not i%2:
+        temp = sorted(lines[i:i+2], key=myFunc)
         print(", ".join([str(l) for l in temp[0]]))
 

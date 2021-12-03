@@ -1,9 +1,11 @@
 #!/bin/bash
-rm temp.txt
+rm data/temp.txt
 
 for i in $(seq 10)
 do
    ./scripts/multiprocessing.sh >> data/temp.txt
+   #./all coverage >> data/4_core_out_multiprocess.csv
+
 done
 
-python scripts/filter.py > data/multiprocessing_out.csv
+python3 scripts/filter.py > data/2_core_out_multiprocess.csv
