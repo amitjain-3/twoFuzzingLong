@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
 
     /*** First do some system profiling FOR LINUX ***/
     // Get num cores
-    int processorCount = 2;
+    int processorCount = 4;
     //processorCount = sysconf(_SC_NPROCESSORS_ONLN);
     // printf("Number of logical cores available: %d\n", processorCount);
     //current_fuzz_inputs = malloc(sizeof(int)*processorCount);
